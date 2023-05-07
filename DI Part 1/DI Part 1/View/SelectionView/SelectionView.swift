@@ -19,13 +19,7 @@ class SelectionView: UIView {
         }
     }
     
-    var indicatorView = UIView() {
-        didSet {
-            self.indicatorView.backgroundColor = self.dataSource?.colorForIndicator(self)
-            
-            self.addSubview(indicatorView)
-        }
-    }
+    var indicatorView: UIView?
     
     override init(frame: CGRect) {
         super.init(frame: frame)
@@ -47,7 +41,6 @@ class SelectionView: UIView {
         let cellWidth = viewWidth / numberOfCell
         
         doSetCells(viewHeight: viewHeight, cellWidth: cellWidth, numberOfCell: numberOfCell)
-        setIndicatorView(viewHeight: viewHeight, cellWidth: cellWidth)
         
         self.delegate?.selectionView?(self, didSelectCellAt: 0)
     }
@@ -77,16 +70,15 @@ class SelectionView: UIView {
             selectionViewCell.colorButton?.addTarget(self, action: #selector(doCellClick), for: .touchUpInside)
             
             self.addSubview(selectionViewCell)
-        }
-    }
-    
-    private func setIndicatorView(viewHeight: Int, cellWidth: Int) {
-        self.indicatorView = UIView(frame: CGRect(x: (cellWidth / 4), y: viewHeight - 2, width: cellWidth / 2, height: 2))
-    }
-    
-    private func moveIndicatorView(cellWidth: Int, moveTo: Int = 0) {
-        UIView.animate(withDuration: 0.3) {
-            self.indicatorView.frame.origin.x = CGFloat(moveTo * cellWidth) + CGFloat((cellWidth / 4))
+            
+            if index == 0 {
+                let centerX = selectionViewCell.frame.origin.x + selectionViewCell.frame.width / 4
+                self.indicatorView = UIView(frame: CGRect(x: Int(centerX), y: viewHeight - 2, width: Int(selectionViewCell.frame.width) / 2, height: 2))
+                
+                self.indicatorView!.backgroundColor = self.dataSource?.colorForIndicator(self)
+                
+                self.addSubview(indicatorView!)
+            }
         }
     }
     
@@ -95,7 +87,17 @@ class SelectionView: UIView {
         
         if shouldCellSelect {
             self.delegate?.selectionView?(self, didSelectCellAt: sender.tag)
-            self.moveIndicatorView(cellWidth: Int(sender.frame.width), moveTo: sender.tag)
+            self.moveIndicatorView(reference: sender)
         }
+    }
+    
+    private func moveIndicatorView(reference: UIButton) {
+        UIView.animate(withDuration: 0.3, animations: { [weak self] in
+            let referenceSuperView = reference.superview!.superview!
+            let centerX = referenceSuperView.frame.origin.x + referenceSuperView.frame.width / 4
+            self?.indicatorView?.frame.origin.x = centerX
+            
+            self?.layoutIfNeeded()
+        })
     }
 }
