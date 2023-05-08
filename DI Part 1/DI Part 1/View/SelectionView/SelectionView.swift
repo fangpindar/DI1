@@ -19,7 +19,7 @@ class SelectionView: UIView {
         }
     }
     
-    var indicatorView: UIView?
+    var indicatorView = UIView()
     
     override init(frame: CGRect) {
         super.init(frame: frame)
@@ -40,7 +40,7 @@ class SelectionView: UIView {
         let viewHeight = Int(self.frame.height)
         let cellWidth = viewWidth / numberOfCell
         
-        doSetCells(viewHeight: viewHeight, cellWidth: cellWidth, numberOfCell: numberOfCell)
+        doSetCells(viewWidth: viewWidth, viewHeight: viewHeight, cellWidth: cellWidth, numberOfCell: numberOfCell)
         
         self.delegate?.selectionView?(self, didSelectCellAt: 0)
     }
@@ -52,9 +52,13 @@ class SelectionView: UIView {
         }
     }
     
-    private func doSetCells(viewHeight: Int, cellWidth: Int, numberOfCell: Int) {
+    private func doSetCells(viewWidth: Int, viewHeight: Int, cellWidth: Int, numberOfCell: Int) {
+        let stackView = UIStackView(frame: CGRect(x: 0, y: 0, width: viewWidth, height: viewHeight))
+        stackView.axis = .horizontal
+        stackView.alignment = .center
+        stackView.distribution = .fillEqually
+        
         for index in 0..<numberOfCell {
-            
             guard let selectionViewCell = Bundle(for: SelectionViewCell.self).loadNibNamed("SelectionViewCell", owner: self, options: nil)?.first as? SelectionViewCell else { return }
             
             selectionViewCell.frame = CGRect(x: cellWidth * index, y: 0, width: cellWidth, height: viewHeight - 1)
@@ -69,17 +73,24 @@ class SelectionView: UIView {
             
             selectionViewCell.colorButton?.addTarget(self, action: #selector(doCellClick), for: .touchUpInside)
             
-            self.addSubview(selectionViewCell)
+            stackView.addArrangedSubview(selectionViewCell)
             
             if index == 0 {
-                let centerX = selectionViewCell.frame.origin.x + selectionViewCell.frame.width / 4
-                self.indicatorView = UIView(frame: CGRect(x: Int(centerX), y: viewHeight - 2, width: Int(selectionViewCell.frame.width) / 2, height: 2))
+                self.indicatorView.backgroundColor = self.dataSource?.colorForIndicator(self)
+                 let indicatorViewWidth = Double(viewWidth / numberOfCell) * 0.6
+                 let indicatorViewX = Double(viewWidth / numberOfCell) * 0.2
+                self.indicatorView.frame = CGRect(x: indicatorViewX, y: Double(viewHeight - 2), width: indicatorViewWidth, height: 2)
                 
-                self.indicatorView!.backgroundColor = self.dataSource?.colorForIndicator(self)
-                
-                self.addSubview(indicatorView!)
+                self.addSubview(indicatorView)
             }
         }
+
+        self.addSubview(stackView)
+
+        stackView.topAnchor.constraint(equalTo: self.topAnchor).isActive = true
+        stackView.bottomAnchor.constraint(equalTo: self.bottomAnchor).isActive = true
+        stackView.leftAnchor.constraint(equalTo: self.leftAnchor).isActive = true
+        stackView.rightAnchor.constraint(equalTo: self.rightAnchor).isActive = true
     }
     
     @objc private func doCellClick(_ sender : UIButton) {
@@ -94,10 +105,7 @@ class SelectionView: UIView {
     private func moveIndicatorView(reference: UIButton) {
         UIView.animate(withDuration: 0.3, animations: { [weak self] in
             let referenceSuperView = reference.superview!.superview!
-            let centerX = referenceSuperView.frame.origin.x + referenceSuperView.frame.width / 4
-            self?.indicatorView?.frame.origin.x = centerX
-            
-            self?.layoutIfNeeded()
+            self?.indicatorView.frame.origin.x = referenceSuperView.frame.minX + referenceSuperView.frame.width * 0.2
         })
     }
 }
